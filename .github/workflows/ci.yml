@@ -1,0 +1,78 @@
+name: BARQ CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install validation dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install requests
+
+      - name: Python syntax check
+        run: |
+          python -m compileall -q app validate.py failure_test.py
+
+      - name: Validate Docker Compose configuration
+        run: docker compose config
+
+      - name: Build application images
+        run: docker compose build
+
+      - name: Start services
+        run: docker compose up -d
+
+      - name: Wait for services
+        run: |
+          set -e
+
+          for i in {1..30}; do
+            echo "Waiting for services... attempt $i/30"
+
+            if docker compose ps | grep -q "app-01.*healthy" &&
+               docker compose ps | grep -q "app-02.*healthy" &&
+               docker compose ps | grep -q "postgres.*healthy" &&
+               docker compose ps | grep -q "redis.*healthy"; then
+              echo "All required services are healthy."
+              break
+            fi
+
+            if [ "$i" -eq 30 ]; then
+              echo "Services did not become healthy."
+              docker compose ps
+              docker compose logs --no-color
+              exit 1
+            fi
+
+            sleep 2
+          done
+
+      - name: Run environment validation
+        run: ./validate.py
+
+      - name: Show service status
+        if: always()
+        run: docker compose ps
+
+      - name: Show logs on failure
+        if: failure()
+        run: docker compose logs --no-color
+
+      - name: Cleanup
+        if: always()
+        run: docker compose down -v
