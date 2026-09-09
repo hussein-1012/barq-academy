@@ -9,7 +9,7 @@ import urllib.request
 from urllib.parse import urljoin
 
 
-BASE_URL = os.getenv("BASE_URL", "http://127.0.0.1:8090").rstrip("/")
+BASE_URL = os.getenv("BASE_URL", "http://127.0.0.1:8080").rstrip("/")
 TIMEOUT = 5
 
 passed = 0
@@ -572,8 +572,8 @@ if code == 0:
 nginx_ports = ports.get("nginx", "")
 
 report(
-    "127.0.0.1:8090->80/tcp" in nginx_ports,
-    f"Only NGINX publishes host port 8090 - {nginx_ports}"
+    "127.0.0.1:8080->80/tcp" in nginx_ports,
+    f"Only NGINX publishes host port 8080 - {nginx_ports}"
 )
 
 for container in [
