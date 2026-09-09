@@ -9,7 +9,7 @@ import urllib.request
 from urllib.parse import urljoin
 
 
-BASE_URL = os.getenv("BASE_URL", "http://127.0.0.1:8080").rstrip("/")
+BASE_URL = os.getenv("BASE_URL", "http://127.0.0.1:8090").rstrip("/")
 TIMEOUT = 5
 
 passed = 0
@@ -233,6 +233,7 @@ def get_container_states():
     for container in [
         "app-01",
         "app-02",
+        "app-03",
         "nginx",
         "postgres",
         "redis",
@@ -436,10 +437,10 @@ for _ in range(20):
 
 report(
     "app-01" in instances
-    and "app-02" in instances,
-    f"Both backend instances receive traffic - instances={sorted(instances)}"
+    and "app-02" in instances
+    and "app-03" in instances,
+    f"All backend instances receive traffic - instances={sorted(instances)}"
 )
-
 print()
 
 
@@ -454,6 +455,7 @@ services = get_docker_services()
 required_services = {
     "app-01",
     "app-02",
+    "app-03",
     "nginx",
     "postgres",
     "redis",
@@ -475,6 +477,7 @@ for service in sorted(required_services):
     if service in {
         "app-01",
         "app-02",
+        "app-03",
         "postgres",
         "redis",
     }:
@@ -504,6 +507,8 @@ postgres_networks = inspect_networks("postgres")
 redis_networks = inspect_networks("redis")
 app01_networks = inspect_networks("app-01")
 app02_networks = inspect_networks("app-02")
+app03_networks = inspect_networks("app-03")
+
 
 report(
     nginx_networks == ["barq-assessment_frontend"],
@@ -530,6 +535,12 @@ report(
     "barq-assessment_frontend" in app02_networks
     and "barq-assessment_backend" in app02_networks,
     f"app-02 is on frontend/backend - networks={app02_networks}"
+)
+
+report(
+    "barq-assessment_frontend" in app03_networks
+    and "barq-assessment_backend" in app03_networks,
+    f"app-03 is on frontend/backend - networks={app03_networks}"
 )
 
 print()
@@ -561,13 +572,14 @@ if code == 0:
 nginx_ports = ports.get("nginx", "")
 
 report(
-    "127.0.0.1:8080->80/tcp" in nginx_ports,
-    f"Only NGINX publishes host port 8080 - {nginx_ports}"
+    "127.0.0.1:8090->80/tcp" in nginx_ports,
+    f"Only NGINX publishes host port 8090 - {nginx_ports}"
 )
 
 for container in [
     "app-01",
     "app-02",
+    "app-03",
     "postgres",
     "redis",
 ]:
